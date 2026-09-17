@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense &amp; Budget Visualizer</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- ── HEADER ── -->
+  <header class="app-header">
+    <div class="header-left">
+      <span class="logo">💰</span>
+      <h1>Expense &amp; Budget Visualizer</h1>
+    </div>
+    <button id="themeToggle" class="btn-icon" title="Toggle Dark / Light Mode" aria-label="Toggle theme">
+      <span id="themeIcon">🌙</span>
+    </button>
+  </header>
+
+  <main class="app-main">
+
+    <!-- ── BALANCE CARD ── -->
+    <section class="balance-section">
+      <div class="balance-card">
+        <p class="balance-label">Total Balance</p>
+        <p class="balance-amount" id="totalBalance">Rp 0</p>
+      </div>
+      <div class="balance-card income">
+        <p class="balance-label">Total Pemasukan</p>
+        <p class="balance-amount" id="totalIncome">Rp 0</p>
+      </div>
+      <div class="balance-card expense">
+        <p class="balance-label">Total Pengeluaran</p>
+        <p class="balance-amount" id="totalExpense">Rp 0</p>
+      </div>
+    </section>
+
+    <!-- ── SPENDING LIMIT ALERT ── -->
+    <div id="limitAlert" class="limit-alert hidden" role="alert">
+      ⚠️ <span id="limitAlertMsg"></span>
+    </div>
+
+    <div class="content-grid">
+
+      <!-- ── LEFT COLUMN ── -->
+      <div class="left-col">
+
+        <!-- INPUT FORM -->
+        <section class="card" id="formSection">
+          <h2>Tambah Transaksi</h2>
+          <form id="transactionForm" novalidate>
+
+            <div class="form-group">
+              <label for="txName">Nama Transaksi <span class="req">*</span></label>
+              <input type="text" id="txName" placeholder="Contoh: Gaji, Makan Siang…" autocomplete="off" required />
+            </div>
+
+            <div class="form-group">
+              <label for="txAmount">Jumlah (Rp) <span class="req">*</span></label>
+              <input type="number" id="txAmount" placeholder="50000" min="1" required />
+            </div>
+
+            <div class="form-group">
+              <label for="txType">Tipe</label>
+              <select id="txType">
+                <option value="expense">Pengeluaran</option>
+                <option value="income">Pemasukan</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="txCategory">Kategori <span class="req">*</span></label>
+              <select id="txCategory" required></select>
+            </div>
+
+            <div class="form-group">
+              <label for="txDate">Tanggal</label>
+              <input type="date" id="txDate" />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">+ Tambah Transaksi</button>
+          </form>
+        </section>
+
+        <!-- CUSTOM CATEGORY MANAGER -->
+        <section class="card" id="categorySection">
+          <h2>Kelola Kategori</h2>
+          <div class="category-input-row">
+            <select id="catTypeSelect">
+              <option value="expense">Pengeluaran</option>
+              <option value="income">Pemasukan</option>
+            </select>
+            <input type="text" id="newCategoryInput" placeholder="Nama kategori baru…" maxlength="30" />
+            <button id="addCategoryBtn" class="btn btn-secondary">Tambah</button>
+          </div>
+          <div id="categoryList" class="category-tag-list"></div>
+        </section>
+
+        <!-- SPENDING LIMIT PER KATEGORI -->
+        <section class="card" id="limitSection">
+          <h2>Spending Limit</h2>
+          <p class="section-hint">Atur batas pengeluaran per kategori. Akan muncul peringatan jika terlampaui.</p>
+          <div class="limit-input-row">
+            <select id="limitCategorySelect"></select>
+            <input type="number" id="limitAmountInput" placeholder="Batas (Rp)" min="1" />
+            <button id="setLimitBtn" class="btn btn-secondary">Set</button>
+          </div>
+          <div id="limitList" class="limit-list"></div>
+        </section>
+
+      </div><!-- /left-col -->
+
+      <!-- ── RIGHT COLUMN ── -->
+      <div class="right-col">
+
+        <!-- PIE CHART -->
+        <section class="card chart-card">
+          <h2>Distribusi Pengeluaran</h2>
+          <div class="chart-wrapper">
+            <canvas id="expenseChart" aria-label="Pie chart distribusi pengeluaran" role="img"></canvas>
+          </div>
+          <p id="chartEmpty" class="chart-empty-msg">Belum ada data pengeluaran.</p>
+        </section>
+
+        <!-- TRANSACTION LIST -->
+        <section class="card" id="listSection">
+          <div class="list-header">
+            <h2>Riwayat Transaksi</h2>
+            <div class="list-controls">
+              <input type="text" id="searchInput" placeholder="🔍 Cari transaksi…" />
+              <select id="filterType">
+                <option value="all">Semua</option>
+                <option value="income">Pemasukan</option>
+                <option value="expense">Pengeluaran</option>
+              </select>
+              <select id="filterCategory">
+                <option value="all">Semua Kategori</option>
+              </select>
+            </div>
+          </div>
+          <div id="transactionList" class="transaction-list" role="list"></div>
+          <p id="listEmpty" class="list-empty-msg">Belum ada transaksi.</p>
+          <button id="clearAllBtn" class="btn btn-danger btn-full">🗑 Hapus Semua</button>
+        </section>
+
+      </div><!-- /right-col -->
+    </div><!-- /content-grid -->
+  </main>
+
+  <!-- ── CONFIRM MODAL ── -->
+  <div id="confirmModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-box">
+      <h3 id="modalTitle">Konfirmasi</h3>
+      <p id="modalMsg">Yakin ingin menghapus semua transaksi?</p>
+      <div class="modal-actions">
+        <button id="modalCancel" class="btn btn-secondary">Batal</button>
+        <button id="modalConfirm" class="btn btn-danger">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
