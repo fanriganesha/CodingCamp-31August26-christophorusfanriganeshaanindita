@@ -1,67 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Expense & Budget Visualizer</title>
-  <link rel="stylesheet" href="css/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — Expense &amp; Budget Visualizer</title>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-  <div class="app-container">
-    <h1 class="app-title">Expense & Budget Visualizer</h1>
-
-    <!-- Total Balance Card -->
-    <div class="card balance-card">
-      <span class="balance-label">TOTAL BALANCE</span>
-      <div id="total-balance" class="balance-value">$0.00</div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <span class="brand">Ledger</span>
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">
+        <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
     </div>
+  </header>
 
-    <!-- Form Add Transaction -->
-    <div class="card form-card">
-      <h2>Add Transaction</h2>
-      <form id="transaction-form">
-        <div class="form-group">
-          <label>Item Name</label>
-          <input type="text" id="item-name" placeholder="e.g. Cilok" required>
+  <main class="wrap">
+
+    <section class="balance-card" id="balanceCard">
+      <p class="balance-label">Total balance</p>
+      <p class="balance-value" id="balanceValue">$0.00</p>
+      <p class="balance-limit" id="limitStatus"></p>
+    </section>
+
+    <section class="panel form-panel">
+      <h2 class="panel-title">Add a transaction</h2>
+      <form id="txForm" novalidate>
+        <div class="field">
+          <label for="itemName">Item name</label>
+          <input type="text" id="itemName" placeholder="e.g. Coffee with Rani" autocomplete="off">
         </div>
-        <div class="form-group">
-          <label>Amount</label>
-          <input type="number" id="item-amount" step="0.01" placeholder="14.94" required>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="amount">Amount</label>
+            <input type="number" id="amount" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+          </div>
+          <div class="field">
+            <label for="category">Category</label>
+            <select id="category">
+              <option value="Food">Food</option>
+              <option value="Transport">Transport</option>
+              <option value="Fun">Fun</option>
+            </select>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Category</label>
-          <select id="item-category" required>
-            <option value="Food">Food</option>
-            <option value="Transport">Transport</option>
-            <option value="Fun">Fun</option>
+
+        <div class="field custom-cat-field" id="customCatField" hidden>
+          <label for="customCatInput">New category name</label>
+          <div class="custom-cat-row">
+            <input type="text" id="customCatInput" placeholder="e.g. Health">
+            <button type="button" id="addCustomCatBtn" class="btn-ghost">Add</button>
+          </div>
+        </div>
+
+        <button type="button" id="manageCatToggle" class="link-btn">+ Add custom category</button>
+
+        <p class="form-error" id="formError" role="alert"></p>
+
+        <button type="submit" class="btn-primary">Add transaction</button>
+      </form>
+    </section>
+
+    <section class="panel budget-panel">
+      <h2 class="panel-title">Spending limit</h2>
+      <div class="field-row">
+        <div class="field">
+          <label for="limitInput">Monthly limit ($)</label>
+          <input type="number" id="limitInput" placeholder="No limit set" step="0.01" min="0">
+        </div>
+      </div>
+    </section>
+
+    <div class="grid-two">
+      <section class="panel list-panel">
+        <div class="panel-head">
+          <h2 class="panel-title">Transactions</h2>
+          <select id="sortSelect" class="sort-select" aria-label="Sort transactions">
+            <option value="date-desc">Newest first</option>
+            <option value="date-asc">Oldest first</option>
+            <option value="amount-desc">Amount: high to low</option>
+            <option value="amount-asc">Amount: low to high</option>
+            <option value="category">Category</option>
           </select>
         </div>
-        <button type="submit" class="btn-submit">Add Transaction</button>
-      </form>
+        <ul class="tx-list" id="txList"></ul>
+        <p class="empty-state" id="emptyState">No transactions yet. Add your first one above.</p>
+      </section>
+
+      <section class="panel chart-panel">
+        <h2 class="panel-title">Spending by category</h2>
+        <div class="chart-wrap">
+          <canvas id="spendChart"></canvas>
+        </div>
+        <p class="empty-state" id="chartEmptyState">Chart appears once you add a transaction.</p>
+        <ul class="legend" id="chartLegend"></ul>
+      </section>
     </div>
 
-    <!-- Bottom Section: List & Chart Side-by-Side -->
-    <div class="bottom-grid">
-      <!-- Transactions List -->
-      <div class="card list-card">
-        <h2>Transactions</h2>
-        <div id="transaction-list" class="transaction-list">
-          <!-- Item transaksi akan muncul di sini -->
-        </div>
+    <section class="panel summary-panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Monthly summary</h2>
       </div>
+      <div id="monthlySummary" class="summary-grid"></div>
+      <p class="empty-state" id="summaryEmptyState">No data for this month yet.</p>
+    </section>
 
-      <!-- Spending Chart -->
-      <div class="card chart-card">
-        <h2>Spending by Category</h2>
-        <div class="chart-wrapper">
-          <canvas id="spending-chart"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
+  </main>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
